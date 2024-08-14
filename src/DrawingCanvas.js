@@ -41,7 +41,9 @@ const DrawingCanvas = () => {
         const y = Math.floor((e.clientY - rect.top) / (rect.height / 28));
 
         ctx.fillStyle = 'black'; // Set fill color
-        ctx.fillRect(x, y, 1, 1);
+        const penSize = 3; // Increase this value for a thicker pen
+
+        ctx.fillRect(x, y, penSize, penSize); // Draw a square with the specified pen size
     };
 
     const clearCanvas = () => {
