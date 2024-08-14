@@ -1,8 +1,14 @@
 import React, { useRef, useState, useEffect } from 'react';
+import model from './Model';
+import * as tf from '@tensorflow/tfjs';
 
 const DrawingCanvas = () => {
     const canvasRef = useRef(null);
     const [isDrawing, setIsDrawing] = useState(false);
+    const [prediction, setPrediction] = useState();
+    useEffect(() => {
+        document.getElementById('predict').innerText = prediction;
+    }, [prediction]);
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -58,17 +64,53 @@ const DrawingCanvas = () => {
             const g = data[i + 1];
             const b = data[i + 2];
             const grayscale = r * 0.3 + g * 0.59 + b * 0.11;
-            pixels.push(grayscale); // Push grayscale value (0-255) directly
+            const isWhite = r > 128 ? 1 : 0; // 1 for white, 0 for black
+            pixels.push(grayscale); 
         }
 
         const pixelArray = [];
         while (pixels.length) pixelArray.push(pixels.splice(0, 28));
 
-        console.log(pixelArray);
+
+        return pixelArray;
     };
+
+    const processDrawing = (pixelArray) => {//assuming pixelArray is of legal format and shape
+        let data = tf.tensor(pixelArray);
+
+        data = data.reshape([1, 28, 28, 1]); // adding channel dimensions
+
+        data = data.asType('float32').div(tf.scalar(255)); //normalize 
+
+        return data;
+    }
+
+    const getPredict =(pos) => {
+        let max = pos[1];
+        let index = 0;
+        for (var i = 0; i < pos.length; i++) {
+            if (pos[i] > max) {
+                max = pos[i];
+                index = i; 
+            }
+        }
+        return index;
+    }
+
+    const readNumber = () => {
+        const pixelArray = getPixelData();
+        const data = processDrawing(pixelArray);
+        const result = model.predict(data);
+        const value = result.dataSync();
+        const number = getPredict(Array.from(value));
+        console.log(number);
+        console.log(Array.from(value));
+        setPrediction(number);
+    }
 
     return (
         <div>
+            <b id = 'predict'></b>
             <canvas
                 ref={canvasRef}
                 width={28}
@@ -87,7 +129,7 @@ const DrawingCanvas = () => {
             />
             <div>
                 <button onClick={clearCanvas}>Clear Canvas</button>
-                <button onClick={getPixelData}>Get Pixel Data</button>
+                <button onClick={readNumber}>Read Number</button>
             </div>
         </div>
     );
